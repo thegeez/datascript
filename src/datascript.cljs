@@ -63,8 +63,32 @@
       (update-in [:ea (.-e datom) (.-a datom)] (fnil conj #{}) datom)
       (update-in [:av (.-a datom) (.-v datom)] (fnil conj #{}) datom))
     (-> db
-      (update-in [:ea (.-e datom) (.-a datom)] disj datom)
-      (update-in [:av (.-a datom) (.-v datom)] disj datom))))
+      (update-in [:ea] (fn [es]
+                         (let [es (update-in es [(.-e datom)]
+                                             (fn [as]
+                                               (let [as (update-in as [(.-a datom)]
+                                                                   (fn [ds]
+                                                                     (let [ds (disj ds datom)]
+                                                                       (when (seq ds)
+                                                                         ds))))]
+                                                 (when (seq as)
+                                                   as))))]
+                           (when (seq es)
+                             es))))
+      (update-in [:av] (fn [as]
+                         (let [as (update-in as [(.-a datom)]
+                                             (fn [vs]
+                                               (let [vs (update-in vs [(.-v datom)]
+                                                                   (fn [ds]
+                                                                     (let [ds (disj ds datom)]
+                                                                       (when (seq ds)
+                                                                         ds))))]
+                                                 (when (seq as)
+                                                   as))))]
+                           (when (seq as)
+                             as))))
+      #_(update-in [:ea (.-e datom) (.-a datom)] disj datom)
+      #_(update-in [:av (.-a datom) (.-v datom)] disj datom))))
 
 (defn- -resolve-eid [eid db]
   (- (.-max-eid db) eid))

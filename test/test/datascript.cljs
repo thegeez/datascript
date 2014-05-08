@@ -71,6 +71,21 @@
                     :where [2 ?a ?v]] db)
              #{[:name "Petr"] [:age 37]})))))
 
+(deftest test-retract-cleanup
+  (let [db (-> (d/empty-db {:aka { :db/cardinality :db.cardinality/many }})
+               (d/with [ { :db/id 1, :name  "Ivan", :age 15, :aka ["X" "Y" "Z"] }
+                         { :db/id 2, :name  "Petr", :age 37 } ]))]
+    (let [db (d/with db [ [:db.fn/retractEntity 1] ])]
+      (println db "AND: " (contains? (:ea db) 1))
+      (is false)
+      (is (not (contains? (:ea db) 1))))
+    (let [db (d/with db [ [:db/add 1 :name "Bob"] ])]
+      (is (not (contains? (get-in db [:av :name]) "Ivan"))))
+    (let [db (-> db
+                 (d/with [ [:db.fn/retractAttribute 1 :name] ])
+                 (d/with [ [:db.fn/retractAttribute 2 :name] ]))]
+      (is (not (contains? (:av db) :name))))))
+
 
 (deftest test-transact!
   (let [conn (d/create-conn {:aka { :db/cardinality :db.cardinality/many }})]
